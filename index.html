@@ -6,15 +6,15 @@
 
 <title>GK Prep</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Lora:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
 :root{
   --dark:#4C3D19;
-  --green:#354024;
-  --moss:#889063;
+  --green:#2f3a21;
+  --moss:#7c8660;
   --tan:#CFBB99;
-  --bone:#E5D7C4;
+  --bone:#EDE4D3;
 }
 
 body{
@@ -27,70 +27,97 @@ body{
 
 /* SIDEBAR */
 .sidebar{
-  width:230px;
+  width:240px;
   background:var(--green);
-  color:white;
-  height:100vh;
-  padding:25px;
+  padding:30px 20px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
 }
 
 .sidebar h2{
   font-family:'Playfair Display', serif;
+  color:#fff;
+  margin-bottom:20px;
 }
 
-.sidebar button{
-  width:100%;
-  padding:12px;
-  margin:8px 0;
+.nav-btn{
+  background:transparent;
   border:none;
-  background:var(--moss);
-  color:white;
-  border-radius:6px;
+  color:#ddd;
+  text-align:left;
+  padding:10px;
+  font-size:15px;
   cursor:pointer;
+  border-radius:6px;
+}
+
+.nav-btn:hover{
+  background:rgba(255,255,255,0.1);
+  color:#fff;
 }
 
 /* MAIN */
 .main{
   flex:1;
-  padding:30px;
+  padding:40px;
 }
 
 .card{
-  max-width:600px;
+  max-width:650px;
   margin:auto;
   background:white;
-  padding:25px;
-  border-radius:10px;
+  padding:30px;
+  border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.05);
+}
+
+h3{
+  font-family:'Playfair Display', serif;
+  font-size:26px;
 }
 
 /* INPUT */
 textarea,input,select{
   width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:6px;
-  border:1px solid #ccc;
+  padding:14px;
+  margin-top:12px;
+  border-radius:8px;
+  border:1px solid #ddd;
+  font-size:16px;
 }
 
 /* BUTTON */
 button.action{
   width:100%;
-  padding:14px;
-  margin-top:12px;
+  padding:16px;
+  margin-top:15px;
   background:var(--tan);
   border:none;
-  border-radius:6px;
+  border-radius:8px;
+  font-size:16px;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+button.action:hover{
+  transform:scale(1.02);
+}
+
+/* OPTIONS */
+.option{
+  width:100%;
+  padding:14px;
+  margin-top:12px;
+  background:#f7f7f7;
+  border:none;
+  border-radius:8px;
+  font-size:16px;
   cursor:pointer;
 }
 
-.option{
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  background:#f5f5f5;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
+.option:hover{
+  background:#eee;
 }
 
 .hidden{display:none;}
@@ -101,10 +128,10 @@ button.action{
 
 <div class="sidebar">
   <h2>GK Prep</h2>
-  <button onclick="show('add')">Add GK</button>
-  <button onclick="show('quiz')">Quiz</button>
-  <button onclick="show('flash')">Flashcards</button>
-  <button onclick="show('stats')">Stats</button>
+  <button class="nav-btn" onclick="show('add')">Add GK</button>
+  <button class="nav-btn" onclick="show('quiz')">Quiz</button>
+  <button class="nav-btn" onclick="show('flash')">Flashcards</button>
+  <button class="nav-btn" onclick="show('stats')">Stats</button>
 </div>
 
 <div class="main">
@@ -114,14 +141,14 @@ button.action{
   <h3>Add GK</h3>
   <textarea id="inputData" placeholder="Earth Day is celebrated on April 22"></textarea>
   <input id="categoryInput" placeholder="Category">
-  <button class="action" onclick="addQ()">Add</button>
+  <button class="action" onclick="addQ()">Add Question</button>
 </div>
 
 <!-- QUIZ -->
 <div id="quiz" class="card hidden">
   <h3 id="question">Start Quiz</h3>
   <select id="categoryFilter"></select>
-  <button class="action" onclick="startQuiz()">Start</button>
+  <button class="action" onclick="startQuiz()">Start Quiz</button>
   <div id="options"></div>
   <p id="score"></p>
 </div>
@@ -153,19 +180,16 @@ function show(tab){
   document.getElementById(tab).classList.remove('hidden');
 }
 
-/* 🧠 SMART PARSER */
-function parse(line){
+/* SMART GENERATOR */
+function generate(line){
   let text=line.trim();
   let lower=text.toLowerCase();
 
   let subject="", answer="", type="fact";
 
-  if(lower.match(/\b(january|february|march|april|may|june|july|august|date|day|celebrated)\b/))
-    type="date";
-  else if(lower.match(/\b(prime minister|president|ceo|founder|author)\b/))
-    type="person";
-  else if(lower.match(/\b(capital|located|city|country)\b/))
-    type="place";
+  if(lower.match(/(april|may|june|date|day|celebrated)/)) type="date";
+  else if(lower.match(/(prime minister|president|ceo|founder)/)) type="person";
+  else if(lower.match(/(capital|city|country|located)/)) type="place";
 
   let match=text.match(/(.+?)\s(is|was|are|were|in|on)\s(.+)/i);
 
@@ -177,13 +201,6 @@ function parse(line){
     answer=words.slice(-2).join(" ");
     subject=words.slice(0,-2).join(" ");
   }
-
-  return {subject,answer,type};
-}
-
-/* GENERATE */
-function generate(line){
-  let {subject,answer,type}=parse(line);
 
   let q="";
   if(type==="date") q=`When is ${subject}?`;
@@ -206,6 +223,8 @@ function addQ(){
   let text=inputData.value;
   let cat=categoryInput.value||"General";
 
+  if(!text.trim()) return alert("Enter something");
+
   let q=generate(text);
   q.category=cat;
 
@@ -213,7 +232,9 @@ function addQ(){
   localStorage.setItem("gk",JSON.stringify(db));
   updateCats();
 
-  alert("Added");
+  // 🧼 CLEAR INPUT AFTER ADD
+  inputData.value="";
+  categoryInput.value="";
 }
 
 /* CATEGORY */
