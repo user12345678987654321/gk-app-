@@ -1,10 +1,85 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>GK Quiz</title>
-  </head>
-  <body>
-    <h1>My GK Quiz Website</h1>
-    <p>It works 🎉</p>
-  </body>
+<head>
+  <title>GK Quiz</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #fdf6f9;
+      text-align: center;
+    }
+    .card {
+      background: #fff0f5;
+      padding: 20px;
+      margin: 50px auto;
+      width: 300px;
+      border-radius: 12px;
+    }
+    button {
+      display: block;
+      margin: 10px auto;
+      padding: 10px;
+      border: none;
+      background: #ffd6e0;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2 id="question">Loading...</h2>
+  <div id="options"></div>
+  <p id="score"></p>
+</div>
+
+<script>
+const questions = [
+  {
+    question: "Earth Day is celebrated on?",
+    options: ["April 22", "June 5", "March 21", "May 1"],
+    answer: "April 22"
+  },
+  {
+    question: "ISRO is the space agency of?",
+    options: ["USA", "India", "Russia", "China"],
+    answer: "India"
+  }
+];
+
+let index = 0;
+let score = 0;
+
+function loadQuestion() {
+  const q = questions[index];
+  document.getElementById("question").innerText = q.question;
+
+  const optionsDiv = document.getElementById("options");
+  optionsDiv.innerHTML = "";
+
+  q.options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.innerText = opt;
+    btn.onclick = () => {
+      if (opt === q.answer) score++;
+      index++;
+
+      if (index < questions.length) {
+        loadQuestion();
+      } else {
+        document.getElementById("question").innerText = "Quiz Finished!";
+        optionsDiv.innerHTML = "";
+        document.getElementById("score").innerText = "Score: " + score;
+      }
+    };
+    optionsDiv.appendChild(btn);
+  });
+}
+
+loadQuestion();
+</script>
+
+</body>
 </html>
