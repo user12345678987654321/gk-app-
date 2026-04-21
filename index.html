@@ -1,270 +1,208 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>GK Quiz App</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GK Prep App</title>
 
 <style>
-  :root{
-    --bg:#f7f3ff;
-    --card:#fff0f6;
-    --accent:#e7d4ff;
-    --btn:#ffd6e7;
-    --text:#333;
-  }
-  body{
-    margin:0;
-    font-family:sans-serif;
-    background:var(--bg);
-    color:var(--text);
-  }
-  .container{
-    max-width:520px;
-    margin:auto;
-    padding:20px;
-  }
-  .card{
-    background:var(--card);
-    padding:18px;
-    border-radius:14px;
-    margin:12px 0;
-  }
-  h1,h3{
-    margin:8px 0;
-    text-align:center;
-  }
-  textarea, select, input{
-    width:100%;
-    padding:10px;
-    border-radius:8px;
-    border:1px solid #ddd;
-    margin-top:8px;
-  }
-  button{
-    width:100%;
-    padding:10px;
-    border:none;
-    border-radius:8px;
-    background:var(--btn);
-    margin-top:10px;
-    cursor:pointer;
-  }
-  .row{
-    display:flex;
-    gap:8px;
-  }
-  .row > *{
-    flex:1;
-  }
-  .pill{
-    display:inline-block;
-    background:var(--accent);
-    padding:4px 10px;
-    border-radius:999px;
-    margin:2px;
-    font-size:12px;
-  }
-  .center{text-align:center;}
+body {
+  margin: 0;
+  font-family: sans-serif;
+  display: flex;
+  background: #f7f3ff;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 200px;
+  background: #e7d4ff;
+  height: 100vh;
+  padding: 20px;
+}
+
+.sidebar h2 {
+  margin-bottom: 20px;
+}
+
+.sidebar button {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: none;
+  background: #ffd6e7;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  padding: 20px;
+}
+
+.card {
+  background: #fff0f6;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 500px;
+  margin: auto;
+}
+
+textarea, input, select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+button.action {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.hidden {
+  display: none;
+}
 </style>
 </head>
 
 <body>
-<div class="container">
 
-<h1>GK Quiz</h1>
-
-<!-- INPUT -->
-<div class="card">
-  <h3>Add GK</h3>
-  <textarea id="inputData" placeholder="Example: Earth Day is April 22"></textarea>
-  <input id="categoryInput" placeholder="Category (e.g. Science, Economy)"/>
-  <button onclick="addQuestion()">Add</button>
-  <button onclick="clearAll()">Clear All Data</button>
+<div class="sidebar">
+  <h2>GK App</h2>
+  <button onclick="show('add')">Add GK</button>
+  <button onclick="show('quiz')">Quiz</button>
+  <button onclick="show('flash')">Flashcards</button>
+  <button onclick="show('stats')">Stats</button>
 </div>
 
-<!-- QUIZ SETUP -->
-<div class="card">
-  <h3>Start Quiz</h3>
-  <select id="categoryFilter"></select>
-  <input id="numQ" type="number" placeholder="Number of questions (optional)"/>
-  <button onclick="startQuiz()">Start</button>
-  <button onclick="retryWrong()">Retry Wrong</button>
+<div class="main">
+
+<!-- ADD -->
+<div id="add" class="card">
+  <h3>Add GK</h3>
+  <textarea id="inputData" placeholder="Earth Day is April 22"></textarea>
+  <input id="categoryInput" placeholder="Category">
+  <button class="action" onclick="addQuestion()">Add</button>
 </div>
 
 <!-- QUIZ -->
-<div class="card">
-  <h3 id="question">No quiz running</h3>
+<div id="quiz" class="card hidden">
+  <h3 id="question">Start quiz</h3>
+  <select id="categoryFilter"></select>
+  <button onclick="startQuiz()">Start</button>
   <div id="options"></div>
   <p id="score"></p>
 </div>
 
-<!-- FLASHCARDS -->
-<div class="card">
+<!-- FLASH -->
+<div id="flash" class="card hidden">
   <h3>Flashcards</h3>
-  <div id="flashcard" class="center">No data</div>
-  <button onclick="flipCard()">Flip</button>
-  <button onclick="nextCard()">Next</button>
+  <p id="flashcard">No data</p>
+  <button onclick="flip()">Flip</button>
+  <button onclick="next()">Next</button>
 </div>
 
 <!-- STATS -->
-<div class="card">
+<div id="stats" class="card hidden">
   <h3>Stats</h3>
-  <p id="stats"></p>
+  <p id="statsText"></p>
 </div>
 
 </div>
 
 <script>
-let db = JSON.parse(localStorage.getItem("gkData")||"[]");
-let wrongQ = [];
-let quiz = [];
-let index=0, score=0;
+let db = JSON.parse(localStorage.getItem("gk")||"[]");
+let quiz=[], i=0, score=0;
 let flashIndex=0, flipped=false;
 
-function save(){
-  localStorage.setItem("gkData", JSON.stringify(db));
+function show(tab){
+  document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
+  document.getElementById(tab).classList.remove('hidden');
 }
 
-function generateMCQ(line){
+function save(){
+  localStorage.setItem("gk", JSON.stringify(db));
+}
+
+function generate(line){
   const parts = line.split(" is ");
   if(parts.length<2) return null;
-  const q = parts[0].trim();
-  const ans = parts[1].trim();
 
-  const distractors = [
-    "None of the above",
-    "All of the above",
-    "Not applicable",
-    "Data unavailable",
-    ans.split(" ")[0],
-    "January 1",
-    "India",
-    "USA"
-  ];
+  const q = parts[0];
+  const a = parts[1];
 
-  let opts = new Set([ans]);
-  while(opts.size<4){
-    opts.add(distractors[Math.floor(Math.random()*distractors.length)]);
-  }
+  let opts = [a, "None", "All", "Unknown"];
+  opts = opts.sort(()=>Math.random()-0.5);
 
-  opts = Array.from(opts).sort(()=>Math.random()-0.5);
-
-  return {
-    question:`What is ${q}?`,
-    options:opts,
-    answer:ans
-  };
+  return {question:`What is ${q}?`, options:opts, answer:a};
 }
 
 function addQuestion(){
-  const text = document.getElementById("inputData").value;
-  const cat = document.getElementById("categoryInput").value || "General";
+  const text = inputData.value;
+  const cat = categoryInput.value || "General";
 
-  const q = generateMCQ(text);
-  if(!q){ alert("Use format: X is Y"); return; }
+  const q = generate(text);
+  if(!q){ alert("Use 'X is Y'"); return; }
 
   q.category = cat;
   db.push(q);
   save();
-  updateCategories();
-  document.getElementById("inputData").value="";
-  alert("Added ✅");
+  alert("Added");
+  updateCats();
 }
 
-function updateCategories(){
-  const sel = document.getElementById("categoryFilter");
+function updateCats(){
   const cats = ["All", ...new Set(db.map(q=>q.category))];
-  sel.innerHTML = cats.map(c=>`<option>${c}</option>`).join("");
+  categoryFilter.innerHTML = cats.map(c=>`<option>${c}</option>`).join("");
 }
 
 function startQuiz(){
-  const cat = document.getElementById("categoryFilter").value;
-  const num = parseInt(document.getElementById("numQ").value);
-
+  const cat = categoryFilter.value;
   quiz = db.filter(q=>cat==="All"||q.category===cat);
-  quiz = quiz.sort(()=>Math.random()-0.5);
-  if(num) quiz = quiz.slice(0,num);
-
-  index=0; score=0; wrongQ=[];
+  i=0; score=0;
   loadQ();
 }
 
 function loadQ(){
-  if(index>=quiz.length){
-    document.getElementById("question").innerText="Finished!";
-    document.getElementById("options").innerHTML="";
-    document.getElementById("score").innerText=`Score: ${score}/${quiz.length}`;
-    updateStats(score, quiz.length);
+  if(i>=quiz.length){
+    question.innerText="Finished!";
+    options.innerHTML="";
+    scoreText=`Score: ${score}/${quiz.length}`;
     return;
   }
 
-  const q = quiz[index];
-  document.getElementById("question").innerText=q.question;
-
-  const optDiv = document.getElementById("options");
-  optDiv.innerHTML="";
+  const q=quiz[i];
+  question.innerText=q.question;
+  options.innerHTML="";
 
   q.options.forEach(o=>{
-    const b=document.createElement("button");
+    let b=document.createElement("button");
     b.innerText=o;
     b.onclick=()=>{
-      if(o===q.answer){ score++; alert("Correct ✅"); }
-      else{ alert("Wrong ❌\n"+q.answer); wrongQ.push(q); }
-      index++;
+      if(o===q.answer) score++;
+      i++;
       loadQ();
     };
-    optDiv.appendChild(b);
+    options.appendChild(b);
   });
 }
 
-function retryWrong(){
-  if(wrongQ.length===0){ alert("No wrong questions"); return; }
-  quiz = [...wrongQ];
-  index=0; score=0;
-  loadQ();
-}
-
-function flipCard(){
+function flip(){
   if(db.length===0) return;
   flipped=!flipped;
-  renderCard();
+  flashcard.innerText = flipped ? db[flashIndex].answer : db[flashIndex].question;
 }
 
-function nextCard(){
-  if(db.length===0) return;
+function next(){
   flashIndex=(flashIndex+1)%db.length;
   flipped=false;
-  renderCard();
+  flashcard.innerText = db[flashIndex]?.question || "No data";
 }
 
-function renderCard(){
-  if(db.length===0){ document.getElementById("flashcard").innerText="No data"; return;}
-  const c=db[flashIndex];
-  document.getElementById("flashcard").innerText = flipped ? c.answer : c.question;
-}
-
-function updateStats(s,t){
-  let stats = JSON.parse(localStorage.getItem("stats")||"[]");
-  stats.push({score:s,total:t,date:Date.now()});
-  localStorage.setItem("stats",JSON.stringify(stats));
-
-  const last = stats[stats.length-1];
-  document.getElementById("stats").innerText =
-    `Last Score: ${last.score}/${last.total} | Attempts: ${stats.length}`;
-}
-
-function clearAll(){
-  if(confirm("Delete all data?")){
-    localStorage.clear();
-    db=[];
-    updateCategories();
-    location.reload();
-  }
-}
-
-updateCategories();
-renderCard();
+updateCats();
 </script>
 
 </body>
