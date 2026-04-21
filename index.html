@@ -3,75 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GK Prep App</title>
+
+<title>GK Prep</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Lora:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
-body {
-  margin: 0;
-  font-family: sans-serif;
-  display: flex;
-  background: #f7f3ff;
+:root{
+  --dark:#4C3D19;
+  --green:#354024;
+  --moss:#889063;
+  --tan:#CFBB99;
+  --bone:#E5D7C4;
 }
 
-/* Sidebar */
-.sidebar {
-  width: 200px;
-  background: #e7d4ff;
-  height: 100vh;
-  padding: 20px;
+body{
+  margin:0;
+  display:flex;
+  font-family:'Lora', serif;
+  background:var(--bone);
+  color:var(--dark);
 }
 
-.sidebar h2 {
-  margin-bottom: 20px;
+/* SIDEBAR */
+.sidebar{
+  width:230px;
+  background:var(--green);
+  color:white;
+  height:100vh;
+  padding:25px;
 }
 
-.sidebar button {
-  width: 100%;
-  margin-bottom: 10px;
-  padding: 10px;
-  border: none;
-  background: #ffd6e7;
-  border-radius: 8px;
-  cursor: pointer;
+.sidebar h2{
+  font-family:'Playfair Display', serif;
 }
 
-/* Main */
-.main {
-  flex: 1;
-  padding: 20px;
+.sidebar button{
+  width:100%;
+  padding:12px;
+  margin:8px 0;
+  border:none;
+  background:var(--moss);
+  color:white;
+  border-radius:6px;
+  cursor:pointer;
 }
 
-.card {
-  background: #fff0f6;
-  padding: 20px;
-  border-radius: 12px;
-  max-width: 500px;
-  margin: auto;
+/* MAIN */
+.main{
+  flex:1;
+  padding:30px;
 }
 
-textarea, input, select {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+.card{
+  max-width:600px;
+  margin:auto;
+  background:white;
+  padding:25px;
+  border-radius:10px;
 }
 
-button.action {
-  margin-top: 10px;
-  width: 100%;
+/* INPUT */
+textarea,input,select{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:6px;
+  border:1px solid #ccc;
 }
 
-.hidden {
-  display: none;
+/* BUTTON */
+button.action{
+  width:100%;
+  padding:14px;
+  margin-top:12px;
+  background:var(--tan);
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
 }
+
+.option{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  background:#f5f5f5;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.hidden{display:none;}
 </style>
 </head>
 
 <body>
 
 <div class="sidebar">
-  <h2>GK App</h2>
+  <h2>GK Prep</h2>
   <button onclick="show('add')">Add GK</button>
   <button onclick="show('quiz')">Quiz</button>
   <button onclick="show('flash')">Flashcards</button>
@@ -83,16 +112,16 @@ button.action {
 <!-- ADD -->
 <div id="add" class="card">
   <h3>Add GK</h3>
-  <textarea id="inputData" placeholder="Earth Day is April 22"></textarea>
+  <textarea id="inputData" placeholder="Earth Day is celebrated on April 22"></textarea>
   <input id="categoryInput" placeholder="Category">
-  <button class="action" onclick="addQuestion()">Add</button>
+  <button class="action" onclick="addQ()">Add</button>
 </div>
 
 <!-- QUIZ -->
 <div id="quiz" class="card hidden">
-  <h3 id="question">Start quiz</h3>
+  <h3 id="question">Start Quiz</h3>
   <select id="categoryFilter"></select>
-  <button onclick="startQuiz()">Start</button>
+  <button class="action" onclick="startQuiz()">Start</button>
   <div id="options"></div>
   <p id="score"></p>
 </div>
@@ -101,8 +130,8 @@ button.action {
 <div id="flash" class="card hidden">
   <h3>Flashcards</h3>
   <p id="flashcard">No data</p>
-  <button onclick="flip()">Flip</button>
-  <button onclick="next()">Next</button>
+  <button class="action" onclick="flip()">Flip</button>
+  <button class="action" onclick="next()">Next</button>
 </div>
 
 <!-- STATS -->
@@ -117,51 +146,87 @@ button.action {
 let db = JSON.parse(localStorage.getItem("gk")||"[]");
 let quiz=[], i=0, score=0;
 let flashIndex=0, flipped=false;
+let stats = JSON.parse(localStorage.getItem("stats")||"{\"attempts\":0,\"avg\":0}");
 
 function show(tab){
   document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
   document.getElementById(tab).classList.remove('hidden');
 }
 
-function save(){
-  localStorage.setItem("gk", JSON.stringify(db));
+/* 🧠 SMART PARSER */
+function parse(line){
+  let text=line.trim();
+  let lower=text.toLowerCase();
+
+  let subject="", answer="", type="fact";
+
+  if(lower.match(/\b(january|february|march|april|may|june|july|august|date|day|celebrated)\b/))
+    type="date";
+  else if(lower.match(/\b(prime minister|president|ceo|founder|author)\b/))
+    type="person";
+  else if(lower.match(/\b(capital|located|city|country)\b/))
+    type="place";
+
+  let match=text.match(/(.+?)\s(is|was|are|were|in|on)\s(.+)/i);
+
+  if(match){
+    subject=match[1];
+    answer=match[3];
+  } else {
+    let words=text.split(" ");
+    answer=words.slice(-2).join(" ");
+    subject=words.slice(0,-2).join(" ");
+  }
+
+  return {subject,answer,type};
 }
 
+/* GENERATE */
 function generate(line){
-  const parts = line.split(" is ");
-  if(parts.length<2) return null;
+  let {subject,answer,type}=parse(line);
 
-  const q = parts[0];
-  const a = parts[1];
+  let q="";
+  if(type==="date") q=`When is ${subject}?`;
+  else if(type==="person") q=`Who is ${subject}?`;
+  else if(type==="place") q=`Where is ${subject}?`;
+  else q=`What is ${subject}?`;
 
-  let opts = [a, "None", "All", "Unknown"];
-  opts = opts.sort(()=>Math.random()-0.5);
+  let pool=["India","USA","Paris","Tokyo","2020","2024","April 22","June 5","ISRO","NASA"];
 
-  return {question:`What is ${q}?`, options:opts, answer:a};
+  let opts=new Set([answer.trim()]);
+  while(opts.size<4){
+    opts.add(pool[Math.floor(Math.random()*pool.length)]);
+  }
+
+  return {question:q,options:[...opts].sort(()=>Math.random()-0.5),answer:answer.trim()};
 }
 
-function addQuestion(){
-  const text = inputData.value;
-  const cat = categoryInput.value || "General";
+/* ADD */
+function addQ(){
+  let text=inputData.value;
+  let cat=categoryInput.value||"General";
 
-  const q = generate(text);
-  if(!q){ alert("Use 'X is Y'"); return; }
+  let q=generate(text);
+  q.category=cat;
 
-  q.category = cat;
   db.push(q);
-  save();
-  alert("Added");
+  localStorage.setItem("gk",JSON.stringify(db));
   updateCats();
+
+  alert("Added");
 }
 
+/* CATEGORY */
 function updateCats(){
-  const cats = ["All", ...new Set(db.map(q=>q.category))];
-  categoryFilter.innerHTML = cats.map(c=>`<option>${c}</option>`).join("");
+  let cats=["All",...new Set(db.map(q=>q.category))];
+  categoryFilter.innerHTML=cats.map(c=>`<option>${c}</option>`).join("");
 }
 
+/* QUIZ */
 function startQuiz(){
-  const cat = categoryFilter.value;
-  quiz = db.filter(q=>cat==="All"||q.category===cat);
+  let cat=categoryFilter.value;
+  quiz=db.filter(q=>cat==="All"||q.category===cat);
+
   i=0; score=0;
   loadQ();
 }
@@ -170,36 +235,46 @@ function loadQ(){
   if(i>=quiz.length){
     question.innerText="Finished!";
     options.innerHTML="";
-    scoreText=`Score: ${score}/${quiz.length}`;
+    score.innerText=`Score: ${score}/${quiz.length}`;
+
+    stats.attempts++;
+    stats.avg=(stats.avg+score/quiz.length)/2;
+    localStorage.setItem("stats",JSON.stringify(stats));
+
+    statsText.innerText=`Attempts: ${stats.attempts} | Avg: ${(stats.avg*100).toFixed(1)}%`;
     return;
   }
 
-  const q=quiz[i];
+  let q=quiz[i];
   question.innerText=q.question;
   options.innerHTML="";
 
   q.options.forEach(o=>{
     let b=document.createElement("button");
+    b.className="option";
     b.innerText=o;
+
     b.onclick=()=>{
       if(o===q.answer) score++;
       i++;
       loadQ();
     };
+
     options.appendChild(b);
   });
 }
 
+/* FLASH */
 function flip(){
   if(db.length===0) return;
   flipped=!flipped;
-  flashcard.innerText = flipped ? db[flashIndex].answer : db[flashIndex].question;
+  flashcard.innerText=flipped?db[flashIndex].answer:db[flashIndex].question;
 }
 
 function next(){
   flashIndex=(flashIndex+1)%db.length;
   flipped=false;
-  flashcard.innerText = db[flashIndex]?.question || "No data";
+  flashcard.innerText=db[flashIndex]?.question||"No data";
 }
 
 updateCats();
